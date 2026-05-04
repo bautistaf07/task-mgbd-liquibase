@@ -1,0 +1,29 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: mgbd_postgres
+    environment:
+      POSTGRES_DB: mgbd_liquibase
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mgbd_liquibase"]
+      interval: 5s
+      retries: 5
+
+  liquibase:
+    image: liquibase/liquibase:4.25-alpine
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./:/liquibase/changelog
+    working_dir: /liquibase/changelog
+    command: ["sh", "-c", "liquibase --defaultsFile=liquibase.properties update"]
+
+volumes:
+  postgres_data:
